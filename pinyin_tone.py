@@ -5,13 +5,18 @@ import re
 
 
 yuanyin_list = [
-    {"āáǎăà": [{"ā": "1"}, {"á": "2"}, {"ǎ": "3"}, {"ă": "3"}, {"à": "4"}], "yuanyin": "a"},
-    {"ōóǒŏò": [{"ō": "1"}, {"ó": "2"}, {"ǒ": "3"}, {"ŏ": "3"}, {"ò": "4"}, ], "yuanyin": "o"},
-    {"ēéěĕè": [{"ē": "1"}, {"é": "2"}, {"ě": "3"}, {"ĕ": "3"}, {"è": "4"}, ], "yuanyin": "e"},
-    {"īíǐĭì": [{"ī": "1"}, {"í": "2"}, {"ǐ": "3"}, {"ĭ": "3"}, {"ì": "4"}, ], "yuanyin": "i"},
-    {"ūúǔŭù": [{"ū": "1"}, {"ú": "2"}, {"ǔ": "3"}, {"ŭ": "3"}, {"ù": "4"}, ], "yuanyin": "u"},
-    {"ǖǘǚǜü": [{"ǖ": "1"}, {"ǘ": "2"}, {"ǚ": "3"}, {"ǜ": "4"}, {"ü": ""}], "yuanyin": "v"},
+    {u"āáǎăà": [{u"ā": "1"}, {u"á": "2"}, {u"ǎ": "3"}, {u"ă": "3"}, {u"à": "4"}], u"yuanyin": u"a"},
+    {u"ōóǒŏò": [{u"ō": "1"}, {u"ó": "2"}, {u"ǒ": "3"}, {u"ŏ": "3"}, {u"ò": "4"}, ], u"yuanyin": u"o"},
+    {u"ēéěĕè": [{u"ē": "1"}, {u"é": "2"}, {u"ě": "3"}, {u"ĕ": "3"}, {u"è": "4"}, ], u"yuanyin": u"e"},
+    {u"īíǐĭì": [{u"ī": "1"}, {u"í": "2"}, {u"ǐ": "3"}, {u"ĭ": "3"}, {u"ì": "4"}, ], u"yuanyin": u"i"},
+    {u"ūúǔŭù": [{u"ū": "1"}, {u"ú": "2"}, {u"ǔ": "3"}, {u"ŭ": "3"}, {u"ù": "4"}, ], u"yuanyin": u"u"},
+    {u"ǖǘǚǜü": [{u"ǖ": "1"}, {u"ǘ": "2"}, {u"ǚ": "3"}, {u"ǜ": "4"}, {u"ü": ""}], u"yuanyin": u"v"},
 ]
+
+pinyinToneMarks = {
+    u'a': u'āáǎà', u'e': u'ēéěè', u'i': u'īíǐì',
+    u'o': u'ōóǒò', u'u': u'ūúǔù', u'ü': u'ǖǘǚǜ',
+}
 
 
 def parsed_yin(yin):
@@ -30,7 +35,20 @@ def parsed_yin(yin):
     yin = yin if re.match('[1-4]', yin[-1]) else yin + '5'
     return yin
 
-def create_tone_with_number(input_path, ouput_path):
+
+def parsed_yin2(yin):
+    m = re.search(r'([a-z]*?)([aeiouüv]{1,3})(n?g?r?)([12345])', yin)
+    seg = m.group(2).replace(u'v', u'ü')
+    tone = int(m.group(4)) % 5
+    pos = 0
+    if len(seg) > 1 and not seg[0] in 'aeo':
+        pos = 1
+    if tone != 0:
+        seg = seg[0:pos] + pinyinToneMarks[seg[pos]][tone-1] + seg[pos+1:]
+    return m.group(1) + seg + m.group(3)
+
+
+def tone_convert(input_path, ouput_path, numeric=True):
     if not os.path.exists(input_path):
         print('please double check {}'.format(input_path))
         return
@@ -39,16 +57,24 @@ def create_tone_with_number(input_path, ouput_path):
         with open(input_path, 'r') as f:
             for line in f.readlines():
                 text, label = line.strip().split('|', maxsplit=1)
-                tone_label = []
+                yin_label = []
 
                 for i in eval(eval(label)):
-                    t = parsed_yin(i)
-                    tone_label.append(t)
-                tone_label = repr(repr(tone_label))
-                p.write('{}|{}\n'.format(text, tone_label))
+                    if numeric:
+                        t = parsed_yin(i)
+                    else:
+                        t = parsed_yin2(i)
+                    yin_label.append(t)
+                yin_label = repr(repr(yin_label))
+                p.write('{}|{}\n'.format(text, yin_label))
+
 
 def main(argv):
-    create_tone_with_number(argv[1], argv[2])
+    assert len(argv) == 4, 'argv len must be 4. Example:' \
+                           'python pinyin_tone.py test.csv test_after.csv test_revert.csv'
+    tone_convert(argv[1], argv[2], numeric=True)
+    tone_convert(argv[2], argv[3], numeric=False)
+
 
 if __name__ == '__main__':
     main(sys.argv)
