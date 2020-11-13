@@ -45,7 +45,6 @@ def create_tone_with_number(input_path, ouput_path):
                     t = parsed_yin(i)
                     tone_label.append(t)
                 tone_label = repr(repr(tone_label))
-                print(text, tone_label)
                 p.write('{}|{}\n'.format(text, tone_label))
 
 def main(argv):
