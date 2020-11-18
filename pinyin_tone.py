@@ -11,17 +11,21 @@ yuanyin_list = [
     {u"īíǐĭì": [{u"ī": "1"}, {u"í": "2"}, {u"ǐ": "3"}, {u"ĭ": "3"}, {u"ì": "4"}, ], u"yuanyin": u"i"},
     {u"ūúǔŭù": [{u"ū": "1"}, {u"ú": "2"}, {u"ǔ": "3"}, {u"ŭ": "3"}, {u"ù": "4"}, ], u"yuanyin": u"u"},
     {u"ǖǘǚǜü": [{u"ǖ": "1"}, {u"ǘ": "2"}, {u"ǚ": "3"}, {u"ǜ": "4"}, {u"ü": ""}], u"yuanyin": u"v"},
+    {u"ńň": [{u"ń": "2"}, {u"ň": "3"}], u"yuanyin": u"n"},
+    {u"": [{u"": "2"}], u"yuanyin": u"m"},
+    {u"ḿ": [{u"ḿ": "2"}], u"yuanyin": u"m"},
 ]
 
 pinyinToneMarks = {
     u'a': u'āáǎà', u'e': u'ēéěè', u'i': u'īíǐì',
     u'o': u'ōóǒò', u'u': u'ūúǔù', u'ü': u'ǖǘǚǜ',
+    u'n': u' ńň ', u'm': u' ḿ  ',   # ḿ
 }
 
 
 def parsed_yin(yin):
     for i in yin:
-        if i in "āáǎăàōóǒŏòēéěĕèīíǐĭìūúǔŭùǖǘǚǜü":
+        if i in "āáǎăàōóǒŏòēéěĕèīíǐĭìūúǔŭùǖǘǚǜüńňḿ":
             for yuanyin in yuanyin_list:
                 for key in yuanyin.keys():
                     if i in key:
@@ -38,7 +42,21 @@ def parsed_yin(yin):
 
 def parsed_yin2(yin):
     m = re.search(r'([a-z]*?)([aeiouüv]{1,3})(n?g?r?)([12345])', yin)
-    seg = m.group(2).replace(u'v', u'ü')
+    if 'lastindex' in dir(m) and m.lastindex > 2:
+        seg = m.group(2).replace(u'v', u'ü')
+    else:
+        m = re.search(r'([nmsz])(h?g?)([12345])', yin)
+        if 'lastindex' in dir(m) and m.lastindex > 2:
+            tone = int(m.group(3)) % 5
+            pos = 0
+
+            if tone and m.group(1)[pos] in pinyinToneMarks and pinyinToneMarks[m.group(1)[pos]][tone-1] != ' ':
+                seg = m.group(1)[:pos] + pinyinToneMarks[m.group(1)[pos]][tone-1] + m.group(1)[pos+1:]
+            else:
+                seg = m.group(1)
+
+            return seg + m.group(2)
+
     tone = int(m.group(4)) % 5
     pos = 0
     if len(seg) > 1 and not seg[0] in 'aeo':
